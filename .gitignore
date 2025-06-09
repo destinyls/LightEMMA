@@ -3,7 +3,11 @@ __pycache__/
 results/
 plate_detection/
 bev_output/
+frame_visualizations/
+trajectory_overlays/
+trajectory_visualizations/
 trajectory_output/
+lightemma.egg-info/
 
 *.out
 *.mp4

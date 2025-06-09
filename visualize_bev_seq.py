@@ -228,7 +228,7 @@ class BEVSequenceVisualizer:
     
     def visualize_trajectory_on_map(self, start_sample_idx=0, end_sample_idx=None, 
                                     step=1, save_path=None, show_plot=True,
-                                    show_trajectory_points=True, show_orientation_arrows=True,
+                                    show_trajectory_points=True, show_orientation_arrows=False,
                                     trajectory_line_width=3, point_size=50, show_point_cloud=True,
                                     show_ego_axes=True, ego_axes_interval=5):
         """
@@ -317,51 +317,10 @@ class BEVSequenceVisualizer:
                 first_frame_points = None
         
         # Create simple background with grid
-        print("Creating simple background visualization...")
+        # print("Creating simple background visualization...")
         
         # Set clean background color
         ax.set_facecolor('#FAFAFA')  # Very light gray background
-        
-        # Add simple grid for reference
-        grid_spacing = 100  # 100 meter grid
-        x_min, y_min, x_max, y_max = adjusted_range
-        
-        # Adaptive grid spacing based on visualization range
-        range_x = x_max - x_min
-        range_y = y_max - y_min
-        max_range = max(range_x, range_y)
-        
-        # Choose appropriate grid spacing
-        if max_range <= 500:
-            major_grid = 50
-            minor_grid = 10
-        elif max_range <= 1000:
-            major_grid = 100
-            minor_grid = 20
-        elif max_range <= 2000:
-            major_grid = 200
-            minor_grid = 50
-        else:
-            major_grid = 500
-            minor_grid = 100
-        
-        print(f"Using grid spacing: major={major_grid}m, minor={minor_grid}m")
-        
-        # Minor grid lines (thinner, more frequent)
-        for x in range(int(x_min), int(x_max) + 1, minor_grid):
-            ax.axvline(x=x, color='lightgray', linestyle='-', alpha=0.3, linewidth=0.5, zorder=1)
-        for y in range(int(y_min), int(y_max) + 1, minor_grid):
-            ax.axhline(y=y, color='lightgray', linestyle='-', alpha=0.3, linewidth=0.5, zorder=1)
-        
-        # Major grid lines (thicker, less frequent)
-        for x in range(int(x_min), int(x_max) + 1, major_grid):
-            ax.axvline(x=x, color='gray', linestyle='-', alpha=0.6, linewidth=0.8, zorder=1)
-        for y in range(int(y_min), int(y_max) + 1, major_grid):
-            ax.axhline(y=y, color='gray', linestyle='-', alpha=0.6, linewidth=0.8, zorder=1)
-        
-        # Add coordinate axes at origin for reference
-        ax.axhline(y=0, color='gray', linestyle='--', alpha=0.7, linewidth=1.5, zorder=2)
-        ax.axvline(x=0, color='gray', linestyle='--', alpha=0.7, linewidth=1.5, zorder=2)
         
         # Plot point cloud background if available
         if first_frame_points is not None and len(first_frame_points) > 0:
@@ -371,11 +330,6 @@ class BEVSequenceVisualizer:
                                s=1.0, c=first_frame_points[:, 2], cmap='viridis', 
                                alpha=0.6, vmin=first_frame_points[:, 2].min(), 
                                vmax=first_frame_points[:, 2].max(), zorder=3)
-            
-            # Add colorbar for point cloud height
-            cbar = plt.colorbar(scatter, ax=ax, shrink=0.8, pad=0.02)
-            cbar.set_label('Height (m)', fontsize=10)
-            cbar.ax.tick_params(labelsize=8)
         
         # Plot trajectory line
         ax.plot(traj_x, traj_y, color=self.trajectory_colors['trajectory_line'], 
@@ -450,10 +404,6 @@ class BEVSequenceVisualizer:
         
         # Set aspect ratio to equal
         ax.set_aspect('equal')
-        
-        # Add legend
-        ax.legend(loc='upper right', fontsize=11, framealpha=0.95, 
-                 fancybox=True, shadow=True)
         
         # Add simplified info text box
         duration = (trajectory[-1]['timestamp'] - trajectory[0]['timestamp']) / 1e6  # Convert to seconds
@@ -627,45 +577,6 @@ class BEVSequenceVisualizer:
         
         # Set clean background color (same as single frame visualization)
         ax.set_facecolor('#FAFAFA')  # Very light gray background
-        
-        # Add adaptive grid for reference (same as single frame visualization)
-        x_min, y_min = curr_x - view_range, curr_y - view_range
-        x_max, y_max = curr_x + view_range, curr_y + view_range
-        
-        # Use same adaptive grid spacing logic as single frame
-        range_x = x_max - x_min
-        range_y = y_max - y_min
-        max_range = max(range_x, range_y)
-        
-        # Choose appropriate grid spacing (same logic as single frame)
-        if max_range <= 500:
-            major_grid = 50
-            minor_grid = 10
-        elif max_range <= 1000:
-            major_grid = 100
-            minor_grid = 20
-        elif max_range <= 2000:
-            major_grid = 200
-            minor_grid = 50
-        else:
-            major_grid = 500
-            minor_grid = 100
-        
-        # Minor grid lines (same as single frame)
-        for x in range(int(x_min), int(x_max) + 1, minor_grid):
-            ax.axvline(x=x, color='lightgray', linestyle='-', alpha=0.3, linewidth=0.5, zorder=1)
-        for y in range(int(y_min), int(y_max) + 1, minor_grid):
-            ax.axhline(y=y, color='lightgray', linestyle='-', alpha=0.3, linewidth=0.5, zorder=1)
-        
-        # Major grid lines (same as single frame)
-        for x in range(int(x_min), int(x_max) + 1, major_grid):
-            ax.axvline(x=x, color='gray', linestyle='-', alpha=0.6, linewidth=0.8, zorder=1)
-        for y in range(int(y_min), int(y_max) + 1, major_grid):
-            ax.axhline(y=y, color='gray', linestyle='-', alpha=0.6, linewidth=0.8, zorder=1)
-        
-        # Add coordinate axes at origin for reference (same as single frame)
-        ax.axhline(y=0, color='gray', linestyle='--', alpha=0.7, linewidth=1.5, zorder=2)
-        ax.axvline(x=0, color='gray', linestyle='--', alpha=0.7, linewidth=1.5, zorder=2)
         
         # Plot point cloud background if available
         if background_points is not None and len(background_points) > 0:

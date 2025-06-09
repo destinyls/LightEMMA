@@ -400,6 +400,8 @@ def evaluate_predictions(results_dir, data_dir, generate_vis=True):
                                 save_path=viz_path,
                             )
                 else:
+                    print(f"No predictions found for frame {frame_idx} in scene {scene_name}")
+                    print("frame.keys(): ", frame.keys(), frame["predictions"].keys())
                     # Count frames with parse errors
                     parse_error_frames += 1
                     scene_parse_errors += 1
