@@ -7,19 +7,78 @@ import numpy as np
 from typing import Dict, List, Tuple, Any, Optional
 from pathlib import Path
 
-# Try to import Argoverse utilities, fall back to local implementations
-try:
-    from argoverse.utils.json_utils import read_json_file
-    from argoverse.utils.centerline_utils import centerline_to_polygon
-    ARGOVERSE_AVAILABLE = True
-except ImportError:
-    from .argoverse_fallback import read_json_file, centerline_to_polygon
-    ARGOVERSE_AVAILABLE = False
+
+def read_json_file(file_path: str) -> Dict[str, Any]:
+    """
+    Read JSON file - local implementation
+    
+    Args:
+        file_path: Path to the JSON file
+        
+    Returns:
+        Loaded JSON data
+    """
+    with open(file_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def centerline_to_polygon(centerline: np.ndarray, visualize: bool = False) -> np.ndarray:
+    """
+    Convert centerline to polygon - local implementation
+    
+    Args:
+        centerline: Array of centerline points
+        visualize: Unused parameter for compatibility
+        
+    Returns:
+        Array of polygon coordinates
+    """
+    if len(centerline) < 2:
+        return centerline
+    
+    # Default lane width
+    lane_width = 3.5
+    half_width = lane_width / 2
+    
+    # Compute perpendicular vectors
+    polygon_points = []
+    
+    for i in range(len(centerline)):
+        if i == 0:
+            # First point: use vector to next point
+            direction = centerline[i+1] - centerline[i]
+        elif i == len(centerline) - 1:
+            # Last point: use vector from previous point
+            direction = centerline[i] - centerline[i-1]
+        else:
+            # Middle points: use average of vectors
+            direction = (centerline[i+1] - centerline[i-1]) / 2
+        
+        # Normalize and get perpendicular
+        direction_norm = np.linalg.norm(direction)
+        if direction_norm > 0:
+            direction = direction / direction_norm
+            perpendicular = np.array([-direction[1], direction[0]])
+            
+            # Add points on both sides
+            left_point = centerline[i] + perpendicular * half_width
+            right_point = centerline[i] - perpendicular * half_width
+            
+            polygon_points.append([left_point, right_point])
+    
+    if polygon_points:
+        # Arrange points to form a closed polygon
+        left_side = [p[0] for p in polygon_points]
+        right_side = [p[1] for p in reversed(polygon_points)]
+        
+        return np.array(left_side + right_side)
+    
+    return centerline
 
 
 def load_map_data(map_path: str) -> Dict[str, Any]:
     """
-    Load map data from JSON file using Argoverse JSON utilities
+    Load map data from JSON file
     
     Args:
         map_path: Path to the map JSON file
@@ -117,7 +176,7 @@ def extract_lane_centerline(lane_data: Dict, map_data: Dict[str, Any],
 
 def compute_lane_polygon_from_centerline(centerline: np.ndarray, lane_width: float = 3.5) -> np.ndarray:
     """
-    Convert lane centerline to polygon using Argoverse utilities
+    Convert lane centerline to polygon
     
     Args:
         centerline: Array of centerline points
@@ -126,52 +185,8 @@ def compute_lane_polygon_from_centerline(centerline: np.ndarray, lane_width: flo
     Returns:
         Array of polygon coordinates
     """
-    try:
-        # Use Argoverse utility to convert centerline to polygon
-        polygon_coords = centerline_to_polygon(centerline, visualize=False)
-        return polygon_coords
-    except Exception as e:
-        print(f"Warning: Could not convert centerline to polygon using Argoverse: {e}")
-        
-        # Fallback: create simple polygon by offsetting centerline
-        if len(centerline) < 2:
-            return centerline
-        
-        # Compute perpendicular vectors
-        polygon_points = []
-        half_width = lane_width / 2
-        
-        for i in range(len(centerline)):
-            if i == 0:
-                # First point: use vector to next point
-                direction = centerline[i+1] - centerline[i]
-            elif i == len(centerline) - 1:
-                # Last point: use vector from previous point
-                direction = centerline[i] - centerline[i-1]
-            else:
-                # Middle points: use average of vectors
-                direction = (centerline[i+1] - centerline[i-1]) / 2
-            
-            # Normalize and get perpendicular
-            direction_norm = np.linalg.norm(direction)
-            if direction_norm > 0:
-                direction = direction / direction_norm
-                perpendicular = np.array([-direction[1], direction[0]])
-                
-                # Add points on both sides
-                left_point = centerline[i] + perpendicular * half_width
-                right_point = centerline[i] - perpendicular * half_width
-                
-                polygon_points.append([left_point, right_point])
-        
-        if polygon_points:
-            # Arrange points to form a closed polygon
-            left_side = [p[0] for p in polygon_points]
-            right_side = [p[1] for p in reversed(polygon_points)]
-            
-            return np.array(left_side + right_side)
-    
-    return centerline
+    # Use the local centerline_to_polygon implementation
+    return centerline_to_polygon(centerline)
 
 
 def filter_map_elements_by_bbox(map_data: Dict[str, Any], 
